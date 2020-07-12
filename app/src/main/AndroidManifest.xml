@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.main.c_care">
+    package="com.main.covid_helper">
 
     <application
-        android:name="com.main.c_care.App"
+        android:name="com.main.covid_helper.App"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -11,7 +11,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:name="com.main.c_care.LoginPage"
+            android:name="com.main.covid_helper.LoginPage"
             android:label="C-CARE">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -27,7 +27,7 @@
              You can define the keys for the debug and release targets in src/debug/ and src/release/.
         -->
         <activity
-            android:name="com.main.c_care.MapsActivity"
+            android:name="com.main.covid_helper.MapsActivity"
             android:label="@string/title_activity_maps">
 
             <!-- <intent-filter> -->
@@ -36,7 +36,7 @@
             <!-- </intent-filter> -->
         </activity>
         <activity
-            android:name="com.main.c_care.MainActivity"
+            android:name="com.main.covid_helper.MainActivity"
             android:label="C-CARE">
 <!--            <intent-filter>-->
 <!--                <action android:name="android.intent.action.MAIN" />-->
@@ -50,11 +50,11 @@
             android:value="@string/google_maps_key" />
 
         <receiver
-            android:name="com.main.c_care.GeofenceBroadcastReceiver"
+            android:name="com.main.covid_helper.GeofenceBroadcastReceiver"
             android:enabled="true"
             android:exported="true" />
 
-        <service android:name="com.main.c_care.LocationService" />
+        <service android:name="com.main.covid_helper.LocationService" />
     </application>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />

@@ -1,22 +1,26 @@
-package com.main.c_care;
-
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
+package com.main.covid_helper;
 
 import android.Manifest;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.os.Bundle;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
+
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Toast;
 
 import com.google.android.gms.location.Geofence;
@@ -25,6 +29,8 @@ import com.google.android.gms.location.GeofencingRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapView;
+import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.CircleOptions;
@@ -32,12 +38,16 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 
-public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnMapLongClickListener {
-    private static final String TAG = "MapsActivity";
+public class Map extends Fragment implements OnMapReadyCallback, GoogleMap.OnMapLongClickListener {
+    SupportMapFragment mapFragment;
+    MapView mapView;
+    View view;
+
+    private static final String TAG = "MapsFragment";
     private GoogleMap mMap;
     private int tag = 0;
 
-    private float GEOFENCE_RADIUS = 15;
+    private float GEOFENCE_RADIUS = 100;
     private int LOCATION_REQUEST_CODE = 10001;
 
     private GeofencingClient geofencingClient;
@@ -46,32 +56,86 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     DatabaseHelper myDb;
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater menuInflater = getMenuInflater();
-        menuInflater.inflate(R.menu.main_menu, menu);
-        return true;
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
+
+//        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+//                .findFragmentById(R.id.map);
+//        mapFragment.getMapAsync(this);
+
+        geofencingClient = LocationServices.getGeofencingClient(getActivity());
+        geofenceHelper = new GeofenceHelper(getActivity());
+
+        myDb = new DatabaseHelper(getContext());
     }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_maps);
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
+    public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
+        inflater.inflate(R.menu.main_menu, menu);
+        super.onCreateOptionsMenu(menu, inflater);
+    }
 
-        geofencingClient = LocationServices.getGeofencingClient(this);
-        geofenceHelper = new GeofenceHelper(this);
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_home:
+                Toast.makeText(getContext(), "Long tap on map to select home location", Toast.LENGTH_SHORT).show();
+                tag = 0;
+                break;
+            case R.id.action_frequently:
+                Toast.makeText(getContext(), "Long tap on map to select frequent location", Toast.LENGTH_SHORT).show();
+                tag = 2;
+                break;
+            case R.id.action_hotspot:
+                Toast.makeText(getContext(), "Long tap on map to select hotspot location", Toast.LENGTH_SHORT).show();
+                tag = 1;
+                break;
+            case R.id.action_log:
+                viewAllData();
+                break;
+            case R.id.action_reset:
+                deleteLocation();
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
 
-        myDb = new DatabaseHelper(this);
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        view = inflater.inflate(R.layout.fragment_map, container, false);
+        return view;
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        mapView = view.findViewById(R.id.map);
+        if (mapView != null)    {
+            mapView.onCreate(null);
+            mapView.onResume();
+            mapView.getMapAsync(this);
+        }
+//        mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.map);
+//        if (mapFragment == null) {
+//            FragmentManager fragmentManager = getFragmentManager();
+//            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+//            mapFragment = SupportMapFragment.newInstance();
+//            fragmentTransaction.replace(R.id.map, mapFragment).commit();
+//        }
+//        mapFragment.getMapAsync(this);
+
     }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-        LatLng bbsr = new LatLng(20.2961, 85.8245);
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(bbsr, 12));
+        MapsInitializer.initialize(getContext());
+        googleMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+        LatLng bbsr = new LatLng(20.264, 85.8259);
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(bbsr, 16));
 
         enableUserLocation();
         mMap.setOnMapLongClickListener(this);
@@ -80,14 +144,14 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     //////////////////////////////////////////////PERMISSIONS///////////////////////////////////////
     private void enableUserLocation() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             mMap.setMyLocationEnabled(true);
 //            startService();
         } else {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
-                ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_REQUEST_CODE);
+            if (ActivityCompat.shouldShowRequestPermissionRationale(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION)) {
+                ActivityCompat.requestPermissions(getActivity(), new String[] {Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_REQUEST_CODE);
             } else {
-                ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_REQUEST_CODE);
+                ActivityCompat.requestPermissions(getActivity(), new String[] {Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_REQUEST_CODE);
             }
         }
     }
@@ -106,13 +170,14 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
+
     /////////////////////////////////////////////DATABASE///////////////////////////////////////////
     private void insertLocation(LatLng latLng, int tag) {
         boolean isInserted = myDb.insertData(latLng, String.valueOf(tag));
         if (isInserted)
-            Toast.makeText(MapsActivity.this, "DATA INSERTED", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "DATA INSERTED", Toast.LENGTH_SHORT).show();
         else
-            Toast.makeText(MapsActivity.this, "DATA NOT INSERTED", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "DATA NOT INSERTED", Toast.LENGTH_SHORT).show();
     }
 
     private void updateLocation(LatLng latLng, int tag) {
@@ -120,7 +185,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (!isUpdated)
             insertLocation(latLng, tag);
         else
-            Toast.makeText(MapsActivity.this, "DATA UPDATED", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "DATA UPDATED", Toast.LENGTH_SHORT).show();
     }
 
     private void viewAllData() {
@@ -146,24 +211,18 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         Integer deleted = myDb.deleteAllData();
         if (deleted > 0) {
             updateMap();
-            Toast.makeText(MapsActivity.this, "RESET SUCCESSFULL", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "RESET SUCCESSFULL", Toast.LENGTH_SHORT).show();
         }
         else
-            Toast.makeText(MapsActivity.this, "RESET UNSUCCESSFULL", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "RESET UNSUCCESSFULL", Toast.LENGTH_SHORT).show();
     }
 
     public void showMessage(String title, String Message) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         builder.setCancelable(true);
         builder.setTitle(title);
         builder.setMessage(Message);
         builder.show();
-    }
-
-    //////////////////////////////////////////FUSED-LOCATION////////////////////////////////////////
-    public void startService() {
-        Intent serviceIntent = new Intent(this, LocationService.class);
-        ContextCompat.startForegroundService(this, serviceIntent);
     }
 
     //////////////////////////////////////////GEOFENCING////////////////////////////////////////////
@@ -194,7 +253,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 tag = res.getInt(4);
                 int id = res.getInt(0);
 
-                int color[][] = {{0, 255, 0}, {255, 0, 0}, {250, 160, 0}};
+                int color[][] = {{0, 255, 0}, {255, 0, 0}, {0, 0, 255}};
 
                 addGeofence(String.valueOf(tag + id * 10), latLng, GEOFENCE_RADIUS, pendingIntent);
                 addCircle(latLng, GEOFENCE_RADIUS, color[tag]);
@@ -226,13 +285,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private void removeAllGeofence(PendingIntent pendingIntent) {
         geofencingClient.removeGeofences(pendingIntent)
-                .addOnSuccessListener(this, new OnSuccessListener<Void>() {
+                .addOnSuccessListener(getActivity(), new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void aVoid) {
                         Log.d(TAG, "onSuccessRemove: Geofence removed....");
                     }
                 })
-                .addOnFailureListener(this, new OnFailureListener() {
+                .addOnFailureListener(getActivity(), new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
                         String errorMessage = geofenceHelper.getErrorString(e);
@@ -249,29 +308,5 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         circleOptions.fillColor(Color.argb(64, color[0], color[1], color[2]));
         circleOptions.strokeWidth(4);
         mMap.addCircle(circleOptions);
-    }
-
-    //////////////////////////////////////////MAIN MENU/////////////////////////////////////////////
-    public void handleHome(MenuItem item) {
-        Toast.makeText(this, "Long tap on map to select home location", Toast.LENGTH_SHORT).show();
-        tag = 0;    //HOME
-    }
-
-    public void handleHotspot(MenuItem item) {
-        Toast.makeText(this, "Long tap on map to select hotspot location", Toast.LENGTH_SHORT).show();
-        tag = 1;    //HOTSPOT
-    }
-
-    public void handleFreq(MenuItem item) {
-        Toast.makeText(this, "Long tap on map to select frequent location", Toast.LENGTH_SHORT).show();
-        tag = 2;    //FREQ
-    }
-
-    public void handleLog(MenuItem item) {
-        viewAllData();
-    }
-
-    public void handleReset(MenuItem item) {
-        deleteLocation();
     }
 }

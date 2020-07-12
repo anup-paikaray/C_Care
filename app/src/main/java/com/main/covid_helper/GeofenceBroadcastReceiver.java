@@ -1,4 +1,4 @@
-package com.main.c_care;
+package com.main.covid_helper;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;

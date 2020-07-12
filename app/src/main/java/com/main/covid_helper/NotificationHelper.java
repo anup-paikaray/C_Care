@@ -1,4 +1,4 @@
-package com.main.c_care;
+package com.main.covid_helper;
 
 import android.app.Notification;
 import android.app.NotificationChannel;

@@ -1,4 +1,4 @@
-package com.main.c_care;
+package com.main.covid_helper;
 
 import android.app.PendingIntent;
 import android.content.Context;
