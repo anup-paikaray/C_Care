@@ -1,2 +1,3 @@
-rootProject.name='C-Trac'
+rootProject.name='COVID-WARRIOR'
 include ':app'
+
